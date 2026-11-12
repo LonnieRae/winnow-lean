@@ -152,7 +152,7 @@ def paymentAmounts (p : Preview) : H :=
                    .identified Ids.reviewTotal (.labeled "Total" (satsText (p.amount + p.fee))) ]
 
 /-- A warning on the review; backend-test's `peopleFlow` reaches all four of `sendReview`'s. -/
-def warning (iconName text : String) : H := .section "" "" [.row [Html.tone .warning (.icon iconName), caption text]]
+def warning (iconName text : String) : H := .section "" "" [warningRow text iconName]
 
 def sendReview (m : Model) (p : Preview) : List H :=
   let warnings : List H :=
@@ -197,13 +197,13 @@ def sendStatus (m : Model) (txid : String) : List H :=
   [ .section ""  ""
       ((if s.confirmedHeight.isSome then [.row [Html.tone .positive (.icon "checkmark.circle.fill"), .identified Ids.broadcastConfirmed (body "Payment confirmed")]]
         else if ((m.historyItem? txid).bind (·.replacedBy)).isSome then
-          [.row [Html.tone .warning (.icon "exclamationmark.triangle"), .identified Ids.broadcastReplaced (body "Replaced")],
+          [.row [Html.tone .warning (.icon "exclamationmark.triangle.fill"), .identified Ids.broadcastReplaced (body "Replaced")],
            caption "This transaction will not confirm: another one spent its coins."]
         else [.row [Html.tone .warning (.icon "clock"), .identified Ids.broadcastPending (body "Waiting for confirmation")],
               caption (if m.settings.advancedMode then "You can leave this screen. Follow this payment in Wallet."
                        else "You can close this screen. The payment stays in Activity until it confirms.")]) ++
        (if s.feeFloorNotice then
-         [.row [.icon "exclamationmark.triangle", caption "The network now requires a higher fee. This payment may be delayed. Advanced mode lets you raise its fee in Wallet."]]
+         [warningRow "The network now requires a higher fee. This payment may be delayed. Advanced mode lets you raise its fee in Wallet."]
         else [])) ] ++
   (match s.preview with
    | some p => [paymentAmounts p] ++ (match p.account with

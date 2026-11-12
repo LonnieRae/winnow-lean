@@ -181,7 +181,8 @@ def paymentRow (m : Model) (p : DisplayedPayment) (tappable := true) : H :=
 def syncLine (m : Model) : H :=
   match m.phase.summary m.status.syncing with
   | .synced => .row [Html.tone .positive (.icon "checkmark.circle"), .identified Ids.syncSummaryText (caption "Up to date")]
-  | .peersUnavailable => .identified Ids.syncSummaryText (body "Couldn't reach the Bitcoin network — check your connection.")
+  | .peersUnavailable => .row [Html.tone .warning (.icon "exclamationmark.triangle.fill"),
+                               .identified Ids.syncSummaryText (body "Couldn't reach the Bitcoin network — check your connection.")]
   | .syncing => .identified Ids.syncSummaryText (.progress "Syncing…")
 
 /-- `AccountsBalanceLine`: how much of the headline sits in multisig accounts, which need co-signers to move;
@@ -199,7 +200,9 @@ def totalBalance (m : Model) : Int := m.status.balance + m.status.accountsBalanc
 when any peer can see the phone's IP address). -/
 def peerRoutingBanner (m : Model) : H :=
   let state := PeerRoutingState.current m.settings.peerGatewaySettings.mode m.status.activeGateways m.status.discoveringGateways
-  .identified Ids.peerRoutingBanner (.row [.icon state.symbol, caption state.message])
+  .identified Ids.peerRoutingBanner
+    (if state.warns then warningRow state.message state.symbol (if state == .offline then .negative else .warning)
+     else .row [.icon state.symbol, caption state.message])
 
 /-- The headline balance: the largest type in the app. -/
 def balanceText (m : Model) : H := .identified Ids.balanceText (.text (satsText (totalBalance m)) .largeTitle)
@@ -243,7 +246,7 @@ error that comes and goes, changes them in place): the section sits above Transa
 removed every few seconds moved the list under the person's finger. -/
 def syncSection (m : Model) : H :=
   let failed := m.phase == .peerDiscoveryFailed
-  let warn (t : String) : H := .row [Html.tone .warning (.icon "exclamationmark.triangle"), body t]
+  let warn (t : String) : H := warningRow t
   let status : H := match syncStatusText m.phase with
     | some t => if failed then warn t else .progress t
     | none => if m.status.syncing then .progress "Scanning filters…" else

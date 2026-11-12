@@ -697,7 +697,7 @@ def collectSections (m : Model) (id : String) : List H :=
                 (if recovery then ("Recovery signatures", Ids.multisigRecoverySignatureCount) else ("Signatures", Ids.multisigSignatureCount))
               .identified rowID (.labeled title s!"{approved} of {threshold}"))
          | none =>
-           [ .row [.icon "exclamationmark.triangle.fill", body "Winnow cannot safely review this PSBT"]
+           [ warningRow "Winnow cannot safely review this PSBT"
            , body (d.reviewError.getD "The account or PSBT is unavailable.") ])
     let actions : List H := match d.screen with
       | some s =>

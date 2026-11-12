@@ -95,6 +95,11 @@ def message : PeerRoutingState → String
   | .direct false => "Direct: peers can see your IP address"
   | .offline => "Offline: peer routing settings are invalid"
 
+/-- A state the person should act on: a peer can see the phone's IP address, or no peer can be reached. -/
+def warns : PeerRoutingState → Bool
+  | .mixed | .direct _ | .offline => true
+  | .checking | .overlay .. => false
+
 def symbol : PeerRoutingState → String
   | .checking => "network"
   | .overlay .. => "lock.shield.fill"

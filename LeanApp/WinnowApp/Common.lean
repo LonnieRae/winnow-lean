@@ -20,8 +20,12 @@ def Model.discardExport (m : Model) : List Cmd :=
 
 def caption (s : String) : H := .text s .caption
 def body (s : String) : H := .text s .body
+/-- A warning, wherever the app shows one: a filled symbol in the warning colour beside its text at body
+size in the label colour. Small grey text beside an untinted symbol read as a footnote. -/
+def warningRow (text : String) (icon : String := "exclamationmark.triangle.fill") (tone : LeanNative.Tone := .warning) : H :=
+  .row [Html.tone tone (.icon icon), body text]
 def errorRows : Option String → List H
-  | some e => [.row [Html.tone .warning (.icon "exclamationmark.triangle"), body e]]
+  | some e => [warningRow e]
   | none => []
 /-- An address, a txid, a key: monospaced small text, wrapped at any character. -/
 def literal (s : String) : H := Html.mono (caption s)
