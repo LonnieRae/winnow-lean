@@ -1,6 +1,6 @@
 import Winnow.Wallet.SegwitSpendReview
 import Winnow.Wallet.MultisigAccount
-import Secp.Ecdsa
+import Secp.Der
 import SecpCt.Ecdsa
 
 /-! # SegWit v0 multisig accounts: signing, counting signatures, finalizing
@@ -17,9 +17,9 @@ account itself and its review (`Wallet/SegwitSpendReview.lean`, in the core libr
     extracts the transaction.
 
 Signatures are made by `SecpCt.Ecdsa.sign`, which does the same work whatever the key is and is proved to
-return what the reference returns (`SecpCt.Ecdsa.sign_eq`), and every one is put to `Secp.Ecdsa.verify`
+return what the reference returns (`SecpCt.Ecdsa.sign_eq`), and every one is put to `SecpCt.Ecdsa.verify`
 before it is written into the PSBT: a signature that leaves here satisfies ECDSA's equation for the key it
-is filed under (`Secp.Ecdsa.verify_sound`). Signatures commit to every input and output (SIGHASH_ALL); no
+is filed under (`SecpCt.Ecdsa.verify_sound`). Signatures commit to every input and output (SIGHASH_ALL); no
 other kind is made or counted. A signature by someone else is counted only if it is strict DER (BIP66) with
 `s` in the lower half (BIP146), as Bitcoin Core's relay rules want it.
 
@@ -45,9 +45,8 @@ def signingContext (a : SegwitMultisigAccount) (tx : Transaction) (k : Nat) (coi
 Checked under the public key it will be filed under before it is returned. -/
 def partialSignature (secret publicKey digest auxiliaryRand : ByteArray) : MAM ByteArray := do
   let some signature := SecpCt.Ecdsa.sign secret digest auxiliaryRand | throw (.named "signingFailed")
-  match Secp.Ecdsa.verify signature digest publicKey with
-  | .ok true => return (Secp.Ecdsa.der signature).push SighashBIP143.hashTypeAll
-  | _ => throw (.named "signingFailed")
+  unless SecpCt.Ecdsa.verify signature digest publicKey do throw (.named "signingFailed")
+  return (Secp.Ecdsa.der signature).push SighashBIP143.hashTypeAll
 
 /-- Reviews the spend, then adds a signature to every input for each of the account's keys that `signingKey`
 holds (a master, or an account key itself); `noSignerKey` when an input has none. The PSBT is replaced only
@@ -88,7 +87,7 @@ def verifiedSignatures (psbt : PSBT) (k : Nat) (resolved : Resolved) (digest : B
   psbt.inputs[k]!.partialSignatures.filter fun (publicKey, partialSig) =>
     resolved.keys.contains publicKey &&
       match countedSignature? partialSig with
-      | some signature => (Secp.Ecdsa.verify signature digest publicKey).toOption == some true
+      | some signature => SecpCt.Ecdsa.verify signature digest publicKey
       | none => false
 
 /-- Which of the account's keys (by position in `keys`) have a verified signature on every input, judged by
